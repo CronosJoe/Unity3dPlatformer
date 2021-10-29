@@ -38,24 +38,24 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
     private bool jumpWish;
 
     //timer variables
-    [SerializeField]float currentTime = 0;
+    [SerializeField] float currentTime = 0;
     [Range(0, 360)]
     [SerializeField] int bombTime = 120; // in seconds
     [Range(0, 2)]
     public float dashTime = 0.3f; //also in seconds
     float maxDashTime = 0.1f;//set on start to dashTime
-    [Range(0,2)]
+    [Range(0, 2)]
     public float dashDelay = 0.5f;
     float dashDelayMax = 0.0f;
     [Range(0, 20)]
-    [SerializeField]int dashDistance = 5;
+    [SerializeField] int dashDistance = 5;
     Vector3 startingPosition = Vector3.zero;
 
 
 
 
     //Timer method
-    private void UpdateTimer() 
+    private void UpdateTimer()
     {
         if (!playerRef.pause)
         {
@@ -78,25 +78,25 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
                     canDash = true;
                 }
             }
-            if (bombTime <= currentTime)
+            if (bombTime <= currentTime && !playerRef.gameEnded)
             {
                 playerRef.EndingTheGame(true); //this will automatically pull to end screen, might want animation/sound first
                 timerDisplay.text = "0 seconds left";
             }
-            else 
+            else if (playerRef.gameEnded)
+            {
+                timerDisplay.text = "Time Up! Better Luck Next Time!";
+            }
+            else
             {
                 timerDisplay.text = (int)(bombTime - currentTime) + " seconds left";
             }
 
         }
     }
-
-
-
     //
     // Motor API
     //
-
     public void MoveInput(Vector3 move)
     {
         moveWish = move;
@@ -106,9 +106,9 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
     {
         jumpWish = true;
     }
-    public void DashInput() 
+    public void DashInput()
     {
-        if (canDash) 
+        if (canDash)
         {
             isDashing = true;
         }
@@ -116,7 +116,7 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
     //
     // Motor Utilities
     //
-    
+
     public Vector3 ClipVelocity(Vector3 inputVelocity, Vector3 normal)
     {
         return Vector3.ProjectOnPlane(inputVelocity, normal);
@@ -128,6 +128,10 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
 
     public Vector3 UpdateVelocity(Vector3 oldVelocity)
     {
+        if (playerRef.pause || playerRef.gameEnded)
+        {
+            return Vector3.zero;
+        }
         if (!isDashing)
         {
             Vector3 velocity = oldVelocity;
@@ -184,12 +188,12 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
             canDash = false;
             return dummyReference.forward * (dashDistance);
         }
-    }
+    }//end of method
 
     public void OnMoveHit(ref Vector3 curPosition, ref Vector3 curVelocity, Collider other, Vector3 direction, float pen)
     {
         Vector3 clipped = ClipVelocity(curVelocity, direction);
-        
+
         // floor
         if (groundLayers.Test(other.gameObject.layer) &&  // require ground layer
             direction.y > 0 &&                                      // direction check
@@ -198,7 +202,7 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
             // only change Y-position if bumping into the floor
             curPosition.y += direction.y * (pen);
             curVelocity.y = clipped.y;
-            
+
             Grounded = true;
         }
         // other
@@ -221,17 +225,17 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
 
         // early exit if we're already grounded or jumping
         if (Grounded || jumpedThisFrame || !wasGrounded) return;
-        
+
         var groundCandidates = body.Cast(curPosition, Vector3.down, maxGroundAdhesionDistance, groundLayers);
         Vector3 snapPosition = curPosition;
         foreach (var candidate in groundCandidates)
         {
             // ignore colliders that we start inside of - it's either us or something bad happened
-            if(candidate.point == Vector3.zero) { continue; }
+            if (candidate.point == Vector3.zero) { continue; }
 
             // NOTE: This code assumes that the ground will always be below us
             snapPosition.y = candidate.point.y - body.FootOffset.y - body.contactOffset;
-            
+
             // Snap to the ground - perform any necessary collision and sliding logic
             body.DeferredCollideAndSlide(ref snapPosition, ref curVelocity, candidate.collider);
             //Debug.Assert(snapPosition.y >= candidate.point.y, "Snapping put us underneath the ground?!");
@@ -246,13 +250,13 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
         // record grounded status for next frame
         wasGrounded = Grounded;
 
-        if (transform.position.y <= -40.0f) 
+        if (transform.position.y <= -40.0f)
         {
             body.InternalVelocity = Vector3.zero;
             transform.position = startingPosition;
         }
     }
-    
+
     //
     // Unity Messages
     //
@@ -275,6 +279,6 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
 
     private void OnValidate()
     {
-        if(body == null ||body.BodyCollider == null) { return; }
+        if (body == null || body.BodyCollider == null) { return; }
     }
 }
