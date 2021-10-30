@@ -7,7 +7,6 @@ using UnityEngine.SceneManagement;
 public class Buttons : MonoBehaviour
 {
     [SerializeField] PlayerController playerVariables;
-    [SerializeField] UnityEngine.UI.Image fadeToWhitePanel;
     bool alphaChanging=false;
     bool currentlyChanging = false;
     public void OnQuitButton() 
@@ -25,6 +24,7 @@ public class Buttons : MonoBehaviour
     }
     public void OnContinue() 
     {
+        Debug.Log("Why no work?");
         playerVariables.PauseTheGame();
     }
     public void ToMainMenu() 
@@ -35,25 +35,24 @@ public class Buttons : MonoBehaviour
     {
         alphaChanging = true;
     }
-    private IEnumerator FadeToWhite() 
+    private IEnumerator FadeToWhite(UnityEngine.UI.Image fadePanel) 
     {
         currentlyChanging = true;
-       Color tmpAlpha = fadeToWhitePanel.color;
+       Color tmpAlpha = fadePanel.color;
         float tmpCount = 0.0f;
         while (tmpCount < playerVariables.timeToWaitForIENumberator)
         {
-            yield return new WaitForSeconds(0.5f);
-            tmpCount += 0.5f;
-            tmpAlpha.a += 10f;
-            fadeToWhitePanel.color = tmpAlpha;
+            yield return new WaitForSeconds(1.0f);
+            tmpCount += Time.deltaTime;
+            tmpAlpha.a += 0.1f;
+            fadePanel.color = tmpAlpha;
         }
     }
     private void FixedUpdate()
     {
         if (alphaChanging && !currentlyChanging) 
         {
-
-            StartCoroutine("FadeToWhite");
+            StartCoroutine("FadeToWhite", playerVariables.fadeToWhitePanel);
         }
     }
 }

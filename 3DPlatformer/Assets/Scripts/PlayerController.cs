@@ -21,6 +21,7 @@ public class PlayerController : MonoBehaviour
     private WaitForSeconds delay = null;
     [Range(1, 100)]
     public float timeToWaitForIENumberator = 10.0f;
+    public UnityEngine.UI.Image fadeToWhitePanel;
     //implement animations here or in another script
     public Animator allThings;
     public Animator UIAnimation;
