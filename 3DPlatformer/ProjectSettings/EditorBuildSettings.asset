@@ -18,6 +18,12 @@ EditorBuildSettings:
     path: Assets/Scenes/MainScene.unity
     guid: a335ff520e62c9b40a100afac78ea8d3
   - enabled: 1
+    path: Assets/Scenes/Level2.unity
+    guid: e74cfa8a9a102b549b2da8e9f63a17ad
+  - enabled: 1
     path: Assets/Scenes/GameOverScreen.unity
     guid: 66a06490ab161484086ef1d0355405c5
+  - enabled: 1
+    path: Assets/Scenes/Credits.unity
+    guid: 9c462787a25f43c458844bf9fb24f3a0
   m_configObjects: {}

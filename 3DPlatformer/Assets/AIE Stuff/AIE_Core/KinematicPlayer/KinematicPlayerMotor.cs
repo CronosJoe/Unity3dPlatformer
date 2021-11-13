@@ -38,9 +38,9 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
     private bool jumpWish;
 
     //timer variables
-    [SerializeField] float currentTime = 0;
+    public float currentTime = 0;
     [Range(0, 360)]
-    [SerializeField] int bombTime = 120; // in seconds
+    public int bombTime = 120; // in seconds
     [Range(0, 2)]
     public float dashTime = 0.3f; //also in seconds
     float maxDashTime = 0.1f;//set on start to dashTime
@@ -59,6 +59,7 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
     {
         if (!playerRef.pause)
         {
+            //dashing
             currentTime += Time.deltaTime;
             if (isDashing)
             {
@@ -78,20 +79,24 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
                     canDash = true;
                 }
             }
+
+            //game endings
             if (bombTime <= currentTime && !playerRef.gameEnded)
             {
                 playerRef.EndingTheGame(true); //this will automatically pull to end screen, might want animation/sound first
                 timerDisplay.text = "0 seconds left";
             }
-            else if (playerRef.gameEnded)
+            else if (playerRef.gameEnded && !playerRef.gameWon)
             {
                 timerDisplay.text = "Time Up! Better Luck Next Time!";
+            }else if(playerRef.gameEnded && playerRef.gameWon) 
+            {
+                timerDisplay.text = "Great Job!";
             }
             else
             {
                 timerDisplay.text = (int)(bombTime - currentTime) + " seconds left";
             }
-
         }
     }
     //
@@ -116,16 +121,13 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
     //
     // Motor Utilities
     //
-
     public Vector3 ClipVelocity(Vector3 inputVelocity, Vector3 normal)
     {
         return Vector3.ProjectOnPlane(inputVelocity, normal);
     }
-
     //
     // IKinematicMotor implementation
     //
-
     public Vector3 UpdateVelocity(Vector3 oldVelocity)
     {
         if (playerRef.pause || playerRef.gameEnded)
@@ -166,9 +168,7 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
                 float frictionAccel = prevSpeed * effectiveFriction * Time.deltaTime;
                 velocity *= Mathf.Max(prevSpeed - frictionAccel, 0) / prevSpeed;
             }
-
             velocity.y = keepY;
-
             // apply movement
             moveWish = Vector3.ClampMagnitude(moveWish, 1);
             float velocityProj = Vector3.Dot(velocity, moveWish);

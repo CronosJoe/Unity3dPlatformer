@@ -7,8 +7,16 @@ using UnityEngine.SceneManagement;
 public class Buttons : MonoBehaviour
 {
     [SerializeField] PlayerController playerVariables;
+    [SerializeField] TMP_Text timeScores;
     bool alphaChanging=false;
     bool currentlyChanging = false;
+    private void Start() 
+    {
+        if(SceneManager.GetActiveScene() == SceneManager.GetSceneByName("Credits")) 
+        {
+            timeScores.text = PlayerPrefs.GetString("Level1") + "\n" + PlayerPrefs.GetString("Level2");
+        }
+    }
     public void OnQuitButton() 
     {
         //do any clean up needed here
@@ -18,13 +26,12 @@ public class Buttons : MonoBehaviour
     {
         SceneManager.LoadScene("MainScene");
     }
-    public void OnSettingsButton() 
+    public void OnCreditsButton() 
     {
-    //load up whatever settings I want
+        SceneManager.LoadScene("Credits");
     }
     public void OnContinue() 
     {
-        Debug.Log("Why no work?");
         playerVariables.PauseTheGame();
     }
     public void ToMainMenu() 

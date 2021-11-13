@@ -4,105 +4,92 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 public class PlayerController : MonoBehaviour
 {
     // Terry's motor and other important objects so we can use them
+    [Header("Assignables")]
     public KinematicPlayerMotor motor;
     public PlayerInput input;
     public GameObject model;
     public GameObject bomb;
     public ParticleSystem bombGoBoom;
     [SerializeField] Buttons UiControl;
+    public Animator motorAnimations;
+    public Animator UIAnimation;
     //important variables not in motor
+    [Header("")]
     public float interactRadius = 5.0f;
     public bool pause = false;
     public bool gameEnded = false;
+    public bool gameWon = false;
+    private int currentLevel;
     private WaitForSeconds delay = null;
     [Range(1, 100)]
     public float timeToWaitForIENumberator = 10.0f;
     public UnityEngine.UI.Image fadeToWhitePanel;
-    //implement animations here or in another script
-    public Animator allThings;
-    public Animator UIAnimation;
     // Start is called before the first frame update
     void OnEnable()
     {
-        input.currentActionMap["Jumping"].performed += JumpPlayer;
-        input.currentActionMap["Special"].performed += TriggerSpecial; //this will most likely be some kind of roll or jump
-        input.currentActionMap["Dash"].performed += SonicLevelsOfDash;
-        input.currentActionMap["Pause"].performed += PauseTheGame;
+        input.currentActionMap["Jumping"].performed += HandleJumpPlayer;
+        input.currentActionMap["Special"].performed += HandleTriggerSpecial; //this will most likely be some kind of roll or jump
+        input.currentActionMap["Dash"].performed += HandleSonicLevelsOfDash;
+        input.currentActionMap["Pause"].performed += HandlePauseTheGame;
     }
     private void Start()
     {
+        if (SceneManager.GetActiveScene() == SceneManager.GetSceneByName("MainScene")) //this will check the current scene so that the CurrentLevel will always be correct.
+        {
+            currentLevel = 1; //this will always be level 1 but the build index might not stay as 1
+            PlayerPrefs.SetInt("CurrentLevel", 1);
+        }
+        else
+        {
+            currentLevel = PlayerPrefs.GetInt("CurrentLevel");
+        }
         delay = new WaitForSeconds(timeToWaitForIENumberator); //if I need to change this I will change the variable down the line
     }
     private void OnDisable()
     {
         try
         {
-            input.currentActionMap["Jumping"].performed -= JumpPlayer;
+            input.currentActionMap["Jumping"].performed -= HandleJumpPlayer;
+            input.currentActionMap["Special"].performed -= HandleTriggerSpecial;
+            input.currentActionMap["Dash"].performed -= HandleSonicLevelsOfDash;
+            input.currentActionMap["Pause"].performed -= HandlePauseTheGame;
         }
         catch (NullReferenceException)
         {
-            Debug.Log("Failed to unsubscribe from the jumpPlayer method due to the input manager being removed first");
+            Debug.LogWarning("Failed to unsubscribe from the input event methods due to the input manager being removed first", this);
         }
-        try
-        {
-
-            input.currentActionMap["Special"].performed -= TriggerSpecial;
-        }
-        catch (NullReferenceException)
-        {
-            Debug.Log("Failed to unsubscribe from the TriggerSpecial method due to the input manager being removed first");
-        }
-        try
-        {
-
-            input.currentActionMap["Dash"].performed -= SonicLevelsOfDash;
-        }
-        catch (NullReferenceException)
-        {
-            Debug.Log("Failed to unsubscribe from the SonicLevelsOfDash method due to the input manager being removed first");
-        }
-        try
-        {
-
-            input.currentActionMap["Pause"].performed -= PauseTheGame;
-        }
-        catch (NullReferenceException)
-        {
-            Debug.Log("Failed to unsubscribe from the PauseTheGame method due to the input manager being removed first");
-        }
-
     }
-    private void TriggerSpecial(InputAction.CallbackContext obj)
+    private void HandleTriggerSpecial(InputAction.CallbackContext obj)
     {
         if (!gameEnded)
         {
             Vector3 distanceVec = bomb.transform.position - transform.position;
-            Debug.Log(distanceVec.magnitude);
-            if (distanceVec.magnitude <= interactRadius)
+            if (distanceVec.sqrMagnitude <= interactRadius * interactRadius)
             {
                 EndingTheGame(false);
             }
         }
     }
-    private void JumpPlayer(InputAction.CallbackContext obj) //this will be called when the player hits the space bar or whatever binding I give to jump and simply apply the jump vector in terry's code
+    private void HandleJumpPlayer(InputAction.CallbackContext obj) //this will be called when the player hits the space bar or whatever binding I give to jump and simply apply the jump vector in terry's code
     {
         if (!gameEnded)
         {
             motor.JumpInput();
         }
     }
-    private void SonicLevelsOfDash(InputAction.CallbackContext obj)
+    private void HandleSonicLevelsOfDash(InputAction.CallbackContext obj)
     {
         if (!gameEnded)
         {
             motor.DashInput();
         }
     }
-    private void PauseTheGame(InputAction.CallbackContext obj)
+    private void HandlePauseTheGame(InputAction.CallbackContext obj)
     {
         if (!gameEnded)
         {
@@ -122,6 +109,7 @@ public class PlayerController : MonoBehaviour
     {
         if (playerLoss)
         {
+            PlayerPrefs.SetString("Level" + currentLevel,"In level " + currentLevel + " Bomb went boom"); //this will save the current level for displaying purposes on the credits
             gameEnded = true;
             bombGoBoom.Play();
             UiControl.StartFading();
@@ -129,7 +117,11 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1); //we'll increment up until we make it to the gameOverScreen
+            PlayerPrefs.SetString("Level" + currentLevel,"Level " + currentLevel + " completed with " + (motor.bombTime - motor.currentTime).ToString("00.00") + " time left."); // this only can be grabbed if bomb time is greater then currentTime
+            PlayerPrefs.SetInt("CurrentLevel", ++currentLevel);
+            gameEnded = true;
+            gameWon = true;
+            Invoke("MoveToNextLevel", timeToWaitForIENumberator/2);
         }
     }
     public void ApplyDashReset()
@@ -141,6 +133,10 @@ public class PlayerController : MonoBehaviour
     {
         SceneManager.LoadScene("GameOverScreen"); //this is technically for both winning and losing but you'll get here faster by losing!
     }
+    private void MoveToNextLevel() 
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1); //we'll increment up until we make it to the gameOverScreen
+    }
     private void Update()//we'll use update to handle our actual movement/animation
     {
         if (!gameEnded)
@@ -150,15 +146,16 @@ public class PlayerController : MonoBehaviour
             if (movementVec2.magnitude > 0)
             {
                 model.transform.forward = new Vector3(movementVec2.x, 0, movementVec2.y);
-                allThings.SetBool("isMoving", true);
+                motorAnimations.SetBool("isMoving", true);
             }
             else
             {
-                allThings.SetBool("isMoving", false);
+                motorAnimations.SetBool("isMoving", false);
             }
         }
-            //jumping animation
-            allThings.SetBool("isJumping", motor.Grounded);
+
+        //jumping animation
+        motorAnimations.SetBool("isJumping", motor.Grounded);
     }
 
 }
