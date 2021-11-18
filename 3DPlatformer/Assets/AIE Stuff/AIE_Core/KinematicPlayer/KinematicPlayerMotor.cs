@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections;
 using TMPro;
 
 /// <summary>
@@ -250,17 +251,23 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
         // record grounded status for next frame
         wasGrounded = Grounded;
 
-        if (transform.position.y <= -40.0f)
+        if (transform.position.y <= -40.0f) //if the player falls below my ground limit
         {
-            body.InternalVelocity = Vector3.zero;
-            transform.position = startingPosition;
+            ResetPlayer();
         }
     }
-
-    //
-    // Unity Messages
-    //
-
+    private void ResetPlayer()
+    {
+        body.InternalVelocity = Vector3.zero; //first we reset the velocity so nothing carries over after respawning
+        transform.position = startingPosition; //then we set the user's position back to the beginning
+    }
+    void OnCollisionEnter(Collision collision)
+    {
+        if(tag == "Obstacle") 
+        {
+            ResetPlayer();
+        }
+    }
     private void Start()
     {
         startingPosition = transform.position;
