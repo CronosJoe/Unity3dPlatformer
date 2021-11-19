@@ -203,7 +203,6 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
             // only change Y-position if bumping into the floor
             curPosition.y += direction.y * (pen);
             curVelocity.y = clipped.y;
-
             Grounded = true;
         }
         // other
@@ -211,6 +210,10 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
         {
             curPosition += direction * (pen);
             curVelocity = clipped;
+        }
+        if (other.transform.CompareTag("Obstacle"))
+        {
+            ResetPlayer();
         }
     }
 
@@ -260,13 +263,6 @@ public class KinematicPlayerMotor : MonoBehaviour, IKinematicMotor
     {
         body.InternalVelocity = Vector3.zero; //first we reset the velocity so nothing carries over after respawning
         transform.position = startingPosition; //then we set the user's position back to the beginning
-    }
-    void OnCollisionEnter(Collision collision)
-    {
-        if(tag == "Obstacle") 
-        {
-            ResetPlayer();
-        }
     }
     private void Start()
     {
